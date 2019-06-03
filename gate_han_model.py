@@ -92,10 +92,6 @@ class GateHanModel:
         bw_lstm_cell_s = tf.nn.rnn_cell.LSTMCell(self.sentence_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
                                                  initializer=tf.orthogonal_initializer(), name='bw_sentence')  # cell
 
-        attention_sw = tf.get_variable(name='attention_sw', shape=[self.sentence_lstm_hidden_size * 2, 40])
-        attention_su = tf.get_variable(name='attention_su', shape=[40, 1])
-        attention_sb = tf.get_variable(name='attention_sb', shape=[40])
-
         outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm_cell_s,
                                                      cell_bw=bw_lstm_cell_s,
                                                      inputs=sentence_inputs,
@@ -104,20 +100,6 @@ class GateHanModel:
                                                      )
         encoder_outputs = tf.concat(outputs, 2)
         self.lstm_ouputs = tf.reshape(encoder_outputs, [-1, self.sentence_lstm_hidden_size*2])
-
-        # attention_weight = tf.tensordot(tf.tanh(tf.tensordot(encoder_outputs, attention_sw, axes=1) + attention_sb),
-        #                                 attention_su, axes=1)
-        #
-        # attention_mask = tf.expand_dims(
-        #     tf.sequence_mask(self.input_paragraph_len, maxlen=tf.shape(sentence_inputs)[1], dtype=tf.float32, ),
-        #     axis=-1
-        # )
-        # max_attention_weight = tf.reduce_max(attention_weight, axis=1, keep_dims=True)
-        # mask_attention_exp = tf.exp((attention_weight - max_attention_weight)) * attention_mask
-        # exp_sum = tf.reduce_sum(mask_attention_exp, axis=1, keepdims=True)
-        # attention_weight = tf.div(mask_attention_exp, exp_sum + 1e-6)
-        # weighted_projection = tf.multiply(encoder_outputs, attention_weight)
-        # self.lstm_ouputs = tf.reduce_sum(weighted_projection, axis=1, )
 
         # 第四步
         self.classification_embedding = tf.Variable(
@@ -187,14 +169,23 @@ if __name__ == '__main__':
     #             [1, 0, 0],
     #         ]
     train_x, train_y = dt.get_train()
-    print(compute_max_para(train_y))
+    val_x, val_y = dt.get_val()
+    test_x, test_y = dt.get_test()
     train_x = dt.data_x2seq(train_x)
     train_y = sequence.pad_sequences(train_y, maxlen=700, padding="post")
     train_y = train_y.tolist()
+    val_x = dt.data_x2seq(val_x)
+    val_y = sequence.pad_sequences(val_y, maxlen=700, padding="post")
+    val_y = val_y.tolist()
+    test_x = dt.data_x2seq(test_x)
+    test_y = sequence.pad_sequences(test_y, maxlen=700, padding="post")
+    test_y = test_y.tolist()
     start_index = 0
     end_index = 5
-
-    for i in range(500):
+    
+    max_val_acc = 0
+    patient = 0
+    for i in range(5000):
         print(start_index)
         if end_index > 100:
             end_index = 100
@@ -214,7 +205,7 @@ if __name__ == '__main__':
             model.target_y: batch_y
         })
 
-        if i % 5 == 0:
+        if i % 10 == 0:
             loss = sess.run(model.loss, feed_dict={
                 model.input_x: train_x,
                 model.target_y: train_y
@@ -223,6 +214,26 @@ if __name__ == '__main__':
                 model.input_x: train_x,
                 # model.input_x: data_x,
             })
+            val_predict = sess.run(model.predict, feed_dict={
+                model.input_x: val_x,
+                # model.input_x: data_x,
+            })
             print(loss)
             compute_acc("training acc: ", train_predict.tolist(), train_y)
+            val_acc = compute_acc("val acc: ", val_predict.tolist(), val_y)
+            if val_acc > max_val_acc:
+                max_val_acc = val_acc
+                patient = 0
+            else:
+                patient += 1
+                if patient == 100:
+                    print("early stop training")
+                    break
+
+    test_predict = sess.run(model.predict, feed_dict={
+        model.input_x: test_x,
+        # model.input_x: data_x,
+    })
+    compute_acc("test acc: ", test_predict.tolist(), test_y)
+
 

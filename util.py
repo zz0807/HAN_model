@@ -16,7 +16,9 @@ def compute_acc(info, pre_data, true_data):
                 total += 1
                 if utter_pre_label == utter_true_label:
                     correct += 1
-    print(info + str((float(correct)/total)*100) + "%")
+    acc = (float(correct)/total)*100
+    print(info + str(acc) + "%")
+    return acc
 
 # 计算句子最大长度:句子里面的单词个数
 def compute_max_sentence(data_x):
