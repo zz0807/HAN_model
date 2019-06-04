@@ -3,6 +3,8 @@ import numpy as np
 from preprocess import BuildDateset
 from util import compute_acc, compute_max_sentence, compute_max_para
 from keras.preprocessing import text, sequence
+from tensorflow.contrib import rnn
+
 
 
 class GateHanModel:
@@ -46,10 +48,10 @@ class GateHanModel:
 
         fw_lstm_cell = tf.nn.rnn_cell.LSTMCell(self.word_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
                                                initializer=tf.orthogonal_initializer())  # cell
-        bw_lstm_cell = tf.nn.rnn_cell.LSTMCell(self.word_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
-                                               initializer=tf.orthogonal_initializer())  # cell
+        # bw_lstm_cell = tf.nn.rnn_cell.LSTMCell(self.word_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
+        #                                        initializer=tf.orthogonal_initializer())  # cell
 
-        attention_w = tf.get_variable(name='attention_w', shape=[self.word_lstm_hidden_size * 2, 40])
+        attention_w = tf.get_variable(name='attention_w', shape=[self.word_lstm_hidden_size, 40])
         attention_u = tf.get_variable(name='attention_u', shape=[40, 1])
         attention_b = tf.get_variable(name='attention_b', shape=[40])
 
@@ -58,13 +60,16 @@ class GateHanModel:
 
             """
             encoder_inputs_actual_length = self.sequence_len(input_x)
-            outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm_cell,
-                                                         cell_bw=bw_lstm_cell,
-                                                         inputs=lstm_input,
-                                                         sequence_length=encoder_inputs_actual_length,
-                                                         dtype=tf.float32,
-                                                         )
-            encoder_outputs = tf.concat(outputs, 2)
+            encoder_outputs, states = tf.nn.dynamic_rnn(fw_lstm_cell, lstm_input,
+                                                        sequence_length=encoder_inputs_actual_length, dtype=tf.float32)
+
+            # outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm_cell,
+            #                                              cell_bw=bw_lstm_cell,
+            #                                              inputs=lstm_input,
+            #                                              sequence_length=encoder_inputs_actual_length,
+            #                                              dtype=tf.float32,
+            #                                              )
+            # encoder_outputs = tf.concat(outputs, 2)
 
             attention_weight = tf.tensordot(tf.tanh(tf.tensordot(encoder_outputs, attention_w, axes=1) + attention_b),
                                             attention_u, axes=1)
@@ -89,21 +94,22 @@ class GateHanModel:
         # 构造句子级别的lstm
         fw_lstm_cell_s = tf.nn.rnn_cell.LSTMCell(self.sentence_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
                                                  initializer=tf.orthogonal_initializer(), name='fw_sentence')  # cell
-        bw_lstm_cell_s = tf.nn.rnn_cell.LSTMCell(self.sentence_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
-                                                 initializer=tf.orthogonal_initializer(), name='bw_sentence')  # cell
-
-        outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm_cell_s,
-                                                     cell_bw=bw_lstm_cell_s,
-                                                     inputs=sentence_inputs,
-                                                     sequence_length=self.input_paragraph_len,
-                                                     dtype=tf.float32,
-                                                     )
-        encoder_outputs = tf.concat(outputs, 2)
-        self.lstm_ouputs = tf.reshape(encoder_outputs, [-1, self.sentence_lstm_hidden_size*2])
+        # bw_lstm_cell_s = tf.nn.rnn_cell.LSTMCell(self.sentence_lstm_hidden_size, forget_bias=1.0, state_is_tuple=True,
+        #                                          initializer=tf.orthogonal_initializer(), name='bw_sentence')  # cell
+        #
+        # outputs, _ = tf.nn.bidirectional_dynamic_rnn(cell_fw=fw_lstm_cell_s,
+        #                                              cell_bw=bw_lstm_cell_s,
+        #                                              inputs=sentence_inputs,
+        #                                              sequence_length=self.input_paragraph_len,
+        #                                              dtype=tf.float32,
+        #                                              )
+        # encoder_outputs = tf.concat(outputs, 2)
+        encoder_outputs, states = tf.nn.dynamic_rnn(fw_lstm_cell_s, sentence_inputs, sequence_length=self.input_paragraph_len, dtype=tf.float32)
+        self.lstm_ouputs = tf.reshape(encoder_outputs, [-1, self.sentence_lstm_hidden_size])
 
         # 第四步
         self.classification_embedding = tf.Variable(
-            initial_value=np.random.normal(size=(self.sentence_lstm_hidden_size * 2, self.class_num + 1)).astype(
+            initial_value=np.random.normal(size=(self.sentence_lstm_hidden_size, self.class_num + 1)).astype(
                 np.float32), )
         self.classification_bias = tf.Variable(
             initial_value=np.random.normal(size=(self.class_num + 1)).astype(np.float32), )
