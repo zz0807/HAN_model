@@ -1,0 +1,2 @@
+word lstm hidden unit:64
+sentence lstm hidden unit:256
