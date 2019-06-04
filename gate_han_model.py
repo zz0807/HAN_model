@@ -23,7 +23,7 @@ class GateHanModel:
         self.batch_size = None
         # self.batch_size = 2
         # word lstm hidden 维度
-        self.word_lstm_hidden_size = 128
+        self.word_lstm_hidden_size = 64
         # sentence lstm hidden 维度
         self.sentence_lstm_hidden_size = 256
 
@@ -232,7 +232,7 @@ if __name__ == '__main__':
                 patient = 0
             else:
                 patient += 1
-                if patient == 100:
+                if patient == 20:
                     print("early stop training")
                     break
 

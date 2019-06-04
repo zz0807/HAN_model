@@ -1,0 +1,21 @@
+        self.word_embedding_dim = 50
+        # 词汇表
+        self.word_dict_size = 2500
+        # lstm 输入的维度
+        self.lstm_input_dim = 200
+        # 输入每个序列最大长度
+        self.input_x_max_len = None
+        # 输入每个文档的最大句子数量
+        self.sentence_max_len = 700
+        # batch_size
+        self.batch_size = None
+        # self.batch_size = 2
+        # word lstm hidden 维度
+        self.word_lstm_hidden_size = 128
+        # sentence lstm hidden 维度
+        self.sentence_lstm_hidden_size = 256
+training acc: 81.6132149266093%
+val acc: 58.51544837980407%
+early stop training
+test acc: 64.44545869465998%
+test acc: 64.44545869465998%
