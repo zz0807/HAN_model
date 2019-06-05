@@ -27,6 +27,10 @@ class GateHanModel:
         # sentence lstm hidden 维度
         self.sentence_lstm_hidden_size = 256
 
+        with open("result.txt", "a", encoding='utf-8') as f:
+            f.write("word lstm hidden unit:" + str(self.word_lstm_hidden_size) + '\n')
+            f.write("sentence lstm hidden unit:" + str(self.sentence_lstm_hidden_size) + '\n')
+
         # 分类任务的数量
         self.class_num = 13
         # 学习率
@@ -240,6 +244,8 @@ if __name__ == '__main__':
         model.input_x: test_x,
         # model.input_x: data_x,
     })
-    compute_acc("test acc: ", test_predict.tolist(), test_y)
+    test_acc = compute_acc("test acc: ", test_predict.tolist(), test_y)
+    with open("result.txt", "a", encoding='utf-8') as f:
+        f.write("test acc:" + str(test_acc) + '\n')
 
 
