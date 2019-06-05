@@ -4,6 +4,7 @@ from preprocess import BuildDateset
 from util import compute_acc, compute_max_sentence, compute_max_para
 from keras.preprocessing import text, sequence
 from tensorflow.contrib import rnn
+import datetime
 
 
 
@@ -150,6 +151,7 @@ class GateHanModel:
 
 
 if __name__ == '__main__':
+    starttime = datetime.datetime.now()
     model = GateHanModel()
     sess = tf.Session()
     #  切成一段一段的。 比如下面 每段有3句话 一个有4段
@@ -245,7 +247,10 @@ if __name__ == '__main__':
         # model.input_x: data_x,
     })
     test_acc = compute_acc("test acc: ", test_predict.tolist(), test_y)
+    endtime = datetime.datetime.now()
+    print((endtime - starttime).seconds)
     with open("result.txt", "a", encoding='utf-8') as f:
         f.write("test acc:" + str(test_acc) + '\n')
+        f.write("running time:" + str((endtime - starttime).seconds) + "s" + '\n')
 
 
