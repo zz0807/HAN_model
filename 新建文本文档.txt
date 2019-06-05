@@ -1,4 +1,5 @@
-        self.word_embedding_dim = 50
+-------------------------bilstm----------------------------------
+    self.word_embedding_dim = 50
         # 词汇表
         self.word_dict_size = 2500
         # lstm 输入的维度
@@ -18,4 +19,4 @@ training acc: 81.6132149266093%
 val acc: 58.51544837980407%
 early stop training
 test acc: 64.44545869465998%
-test acc: 64.44545869465998%
+-------------------lstm-----------------------------------------
